@@ -1,0 +1,22 @@
+export const runtime = "nodejs";
+
+import { NextResponse } from "next/server";
+import { AlreadySentError, EmailNotConfiguredError, sendCandidateEmail } from "@/lib/email";
+
+export async function POST(_req: Request, { params }: { params: Promise<{ candidateId: string }> }) {
+  const { candidateId } = await params;
+
+  try {
+    const result = await sendCandidateEmail(candidateId);
+    return NextResponse.json(result);
+  } catch (err) {
+    if (err instanceof EmailNotConfiguredError) {
+      return NextResponse.json({ error: "Email not configured" }, { status: 400 });
+    }
+    if (err instanceof AlreadySentError) {
+      return NextResponse.json({ error: err.message }, { status: 409 });
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}

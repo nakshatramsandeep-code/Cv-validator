@@ -1,0 +1,149 @@
+KARGO HIRING RUBRIC — Product Manager (PM) and Senior Product Manager (SPM)
+Source: 8 past hire profiles (hires/) calibrated against their last performance rating.
+The job descriptions were used ONLY to understand the roles. No criterion below is taken from them.
+
+======================================================================
+HOW THE RUBRIC WAS DERIVED
+======================================================================
+
+Exceeds Expectations: Rohan Desai, Sunita Krishnamurthy, Aditya Shetty, Meghna Tiwari, Lavanya Iyer
+Meets Expectations:   Vikram Nair (PM), Rahul Bose
+Below Expectations:   Preetham Rao
+
+Pattern 1 — They worked INSIDE a freight/logistics operation before their current function.
+  All five Exceeds hires did hands-on operational work where freight actually moves:
+  Rohan ran documentation for 180+ shipments/month at a CHA firm in Nhava Sheva; Sunita handled
+  200+ shipments/month of B/L and customs documentation; Aditya worked the JNPT terminal alongside
+  ops during berth windows and DO releases; Meghna resolved a customs hold with the CHA through the
+  night; Lavanya ran carrier allocation for 800+ shipments/month at a 3PL.
+  Vikram (HR tech), Rahul (fintech) and Preetham (e-commerce; integrated with 3PLs only via APIs,
+  from a desk) never did.
+
+Pattern 2 — They noticed a pain nobody assigned them, built a fix themselves, and other people adopted it.
+  Rohan: Excel tracker adopted by the 12-person ops team in two weeks; weekend B/L prototype used by
+  30 colleagues within a month. Sunita: rebuilt the documentation intake workflow over a weekend when
+  the FMS vendor changed formats; retained permanently. Lavanya: Excel visibility dashboard adopted by
+  2 other regional teams; created a same-day exception triage that "hadn't existed before".
+  Meghna: onboarding checklist became the team standard. Aditya: first case-study programme, now
+  primary collateral for the whole team.
+  Contrast: Vikram's and Rahul's contributions are strong but are assigned-scope output inside their
+  own function (features shipped, pipeline hit, PRD template for PMs). Preetham's wins are technical
+  optimisations inside a 12-engineer team; no end user adopted something he initiated.
+
+Pattern 3 — They own outcomes with no safety net, including naming their own failures and reversals.
+  Aditya ran a post-mortem on a 4-month deal he LOST and turned it into standard practice.
+  Lavanya killed 2 of her own features on usage data, and wrote the outage post-mortem herself;
+  her eng lead: "She doesn't hedge." Meghna: no escalation to management in 14 months; handled a
+  customs crisis before the client knew. Rohan: "translate field requirements into engineering spec
+  without a product layer"; led a vendor migration under time pressure. Sunita: independent
+  consultant owning client outcomes end-to-end (client passed DGFT inspection with zero observations).
+  Contrast: Vikram's CV is about frameworks, certifications (CPO cert, Reforge), talks and stakeholder
+  presentations — no decision he reversed or failure he owned. Rahul reports numbers against targets.
+  Preetham lists uptime and query-time metrics but no call he made that others had to live with.
+
+Explicitly NOT rewarded (these did not predict performance in the hire data):
+  certifications, courses, conference talks, brand-name employers, MBA/institute pedigree,
+  years of experience, number of features shipped, tool lists.
+
+======================================================================
+SCORING SCALE (use for every criterion)
+======================================================================
+Each criterion is scored 1–5 from evidence written in the CV:
+  5 = Multiple specific, concrete instances matching the "strong" description
+  4 = One clear, specific instance
+  3 = Partial or indirect evidence (adjacent, or described vaguely)
+  2 = Only generic claims ("strong ownership", "passionate about ops") with no concrete example
+  1 = No evidence
+Criterion points = weight × (score / 5). Total score = sum of criterion points (0–100).
+If the CV gives no evidence, score low. Never infer from job titles, company names or credentials.
+
+======================================================================
+PRODUCT MANAGER (PM) RUBRIC
+======================================================================
+
+1. Criterion name: Ground-Floor Operations Exposure
+   What a strong candidate looks like: Has personally done operational work inside a freight,
+   logistics, port, customs, 3PL or similarly operations-heavy business, e.g. handled shipment
+   documentation, coordinated carriers or CHAs, managed exceptions, or worked a shift alongside ops
+   teams. The CV names concrete artefacts or events (B/L, DO release, customs hold, carrier
+   allocation, shipment volumes). Strong = 1+ year doing this work themselves.
+   Weak = only built for, sold to, or "worked with" logistics clients from a desk/SaaS seat,
+   or no operations exposure at all.
+   Weight: 30%
+
+2. Criterion name: Self-Started Fix, Adopted by Others
+   What a strong candidate looks like: At least one instance where they noticed a problem nobody
+   asked them to solve, built a working fix themselves (spreadsheet, prototype, process, dashboard,
+   checklist), and other people, ideally frontline users outside their own team, adopted it.
+   The CV states who adopted it and how fast, or that it became the standard.
+   Weak = improvements were assigned roadmap items, or were artefacts for their own function only
+   (e.g. a PRD template for PMs), or there is no evidence anyone else used what they built.
+   Weight: 30%
+
+3. Criterion name: Owns Failures and Reversals
+   What a strong candidate looks like: The CV describes something that went wrong or a call they
+   reversed, and what they did about it: killed a feature on data, ran a post-mortem on a lost deal
+   or outage they owned, changed course after discovery contradicted the plan. The candidate names
+   the failure and the resulting change in practice.
+   Weak = CV lists only wins, metrics and launches; no sign they have made a call that turned out
+   wrong or taken responsibility for one.
+   Weight: 20%
+
+4. Criterion name: Operates Without a Safety Net
+   What a strong candidate looks like: Evidence they carried outcomes with no layer above or around
+   them catching mistakes: sole owner of an area, handled a crisis personally and in real time,
+   worked directly with end users/ops without an intermediary, covered extra load without
+   escalation. For PM, owning a defined product area (or equivalent in their prior function) end to
+   end is strong.
+   Weak = always one of many in a large team, decisions routed through managers/committees,
+   impact described as "supported" or "contributed to".
+   Weight: 20%
+
+PM weights total: 30 + 30 + 20 + 20 = 100%
+
+======================================================================
+SENIOR PRODUCT MANAGER (SPM) RUBRIC
+======================================================================
+
+1. Criterion name: Ground-Floor Operations Exposure
+   What a strong candidate looks like: Same as PM, AND the candidate has used that operational
+   knowledge to shape a product or system decision, e.g. translated field realities directly into
+   specs, integration design or data standards (as Rohan did "without a product layer").
+   Strong = hands-on ops experience plus a named product/system call it informed.
+   Weak = domain knowledge only from selling to or reading about the industry.
+   Weight: 25%
+
+2. Criterion name: Self-Started Fix, Adopted by Others
+   What a strong candidate looks like: Same as PM, but at a larger scale. The self-initiated fix
+   spread beyond their own team (other branches, regions, the whole company or customers) and
+   became permanent practice or a core product feature (e.g. a weekend prototype that became a
+   platform feature). Strong = 2+ instances, or one instance adopted org-wide.
+   Weak = a single local improvement, or only assigned work.
+   Weight: 25%
+
+3. Criterion name: Owns Failures and Reversals
+   What a strong candidate looks like: Same as PM, plus the lesson changed how OTHER people work:
+   the post-mortem became standard practice, or the kill decision reset the team's roadmap. Evidence
+   they have made consequential calls that others had to live with, and publicly owned the ones
+   that went wrong.
+   Weak = no failures named, or failures blamed on others/circumstances.
+   Weight: 20%
+
+4. Criterion name: Operates Without a Safety Net
+   What a strong candidate looks like: The highest bar for SPM. Has been the most senior person in
+   their function (sole PM, first PM, independent consultant, no manager layer between them and the
+   founder/CEO/customer) and made architectural or strategic calls without a committee approving
+   them. The CV shows those calls stuck, e.g. an engineering lead or client trusted them without
+   escalation.
+   Strong = 2+ years operating this way. Weak = decisions always sat with a senior PM/Head above them.
+   Weight: 30%
+
+SPM weights total: 25 + 25 + 20 + 30 = 100%
+
+======================================================================
+CRITERION → SOURCE HIRES (traceability)
+======================================================================
+Ground-Floor Operations Exposure .... Rohan, Sunita, Aditya, Meghna, Lavanya (absent in Vikram, Rahul, Preetham)
+Self-Started Fix, Adopted by Others . Rohan, Sunita, Lavanya, Meghna, Aditya (absent/weak in Vikram, Rahul, Preetham)
+Owns Failures and Reversals ......... Aditya, Lavanya, Meghna (absent in Vikram, Rahul, Preetham)
+Operates Without a Safety Net ....... Meghna, Rohan, Lavanya, Sunita, Aditya (Rahul partial; absent in Vikram, Preetham)

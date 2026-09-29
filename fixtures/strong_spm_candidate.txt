@@ -1,0 +1,32 @@
+Devika Nair
+Chennai, India | devika.nair.test@example.com | +91 90000 11223
+
+Summary
+8 years in product, the last 5 as the sole product owner for a multi-carrier integration platform
+at a 3PL. Started my career doing hands-on carrier allocation before moving into product.
+
+Experience
+
+Head of Product (sole PM), Transway Logistics (2019-2024)
+- The only PM in the company for five years; no senior PM or Head of Product above me. Made every
+  integration architecture call myself, including which carrier APIs to build native adapters for
+  versus which to route through a third-party aggregator, and lived with the consequences when
+  wrong.
+- Personally ran carrier allocation for 600+ shipments/month for a year before moving into product,
+  so I translated real dispatcher workflows directly into our allocation engine's data model rather
+  than working from secondhand requirements.
+- Built a lightweight carrier-performance dashboard myself, outside any roadmap ask, using data
+  pulled directly from our warehouse. It was adopted by all 4 regional branches within a quarter
+  and eventually became a core platform feature we sell to customers today.
+- Killed our in-house EDI parser after 8 months of investment when usage data showed 90% of
+  customers prefered a hosted connector instead; wrote the post-mortem myself, and it reset how the
+  team evaluates build-vs-buy calls to this day.
+- An outage caused by a schema mismatch during a carrier migration was mine to own end to end; I
+  ran the incident call, wrote the public post-mortem, and changed our migration checklist as a
+  result. Our engineering lead trusted me to run the next three migrations without sign-off.
+
+Carrier Allocation Executive, Transway Logistics (2016-2019)
+- Managed daily carrier allocation and exception handling for 600+ shipments/month.
+
+Education
+B.E. Logistics, Anna University

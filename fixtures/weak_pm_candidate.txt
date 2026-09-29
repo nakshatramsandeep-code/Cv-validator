@@ -1,0 +1,29 @@
+Karan Mehta
+Bengaluru, India | karan.mehta.test@example.com | 9900112233
+linkedin.com/in/karanmehtatest
+
+Summary
+Results-driven Product Manager with 4 years of experience shipping features for a fintech SaaS
+product. Passionate about operations and logistics. Strong ownership mindset and stakeholder
+management skills. CSPO certified.
+
+Experience
+
+Product Manager, PayFlow Technologies (2020-2024)
+- Owned the payments dashboard feature area; shipped 14 features across 8 sprints, hitting
+  roadmap targets each quarter.
+- Wrote PRDs and maintained the product backlog using a standard PRD template I introduced for
+  the PM team.
+- Presented quarterly roadmap updates to leadership and stakeholders.
+- Worked closely with logistics SaaS clients to gather requirements for a shipment-tracking
+  integration, coordinating with their ops teams over calls.
+
+Associate PM, PayFlow Technologies (2019-2020)
+- Supported senior PMs on backlog grooming and sprint planning.
+
+Certifications
+Certified Scrum Product Owner (CSPO), Reforge Product Strategy course
+
+Education
+MBA, Symbiosis Institute
+B.Tech, VIT Vellore

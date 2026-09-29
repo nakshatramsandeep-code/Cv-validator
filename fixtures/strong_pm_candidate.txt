@@ -1,0 +1,31 @@
+Ananya Rao
+Mumbai, India | ananya.rao.test@example.com | +91 98111 22334
+
+Summary
+Product-minded operator with 2.5 years handling documentation and exception management at a
+freight forwarding desk in Nhava Sheva, now looking to move fully into product.
+
+Experience
+
+Operations Associate, Meridian Forwarding (2022-2024)
+- Personally processed B/L and customs documentation for 150+ shipments/month, coordinating
+  directly with CHAs and carrier desks during berth windows and DO releases.
+- Noticed that exception handling (missing documents, customs holds) had no shared visibility.
+  Built an Excel-based exception tracker on my own initiative over a weekend; it was adopted by
+  the entire 10-person ops team within two weeks and is still in use today.
+- When our FMS vendor pushed a breaking format change with two days' notice, I rebuilt our intake
+  spreadsheet template myself over a weekend so the team could keep working; it became the
+  permanent template.
+- Owned the exception queue solo for four months when my manager was on leave, with no one above
+  me approving daily calls on which shipments to escalate versus hold.
+
+Junior Associate, Meridian Forwarding (2021-2022)
+- Shadowed CHA agents during customs holds and DO releases to learn the operational flow.
+
+Postmortem note: I once escalated a customs hold to the client 6 hours too late because I assumed
+the CHA would handle notification. After that, I personally wrote and rolled out a same-day
+escalation checklist that the whole team still follows, and I now flag any assumption like that
+explicitly in daily standups.
+
+Education
+B.Com, Mumbai University
