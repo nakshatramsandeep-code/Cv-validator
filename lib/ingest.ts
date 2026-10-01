@@ -1,5 +1,5 @@
 import { sql } from "./db";
-import { detectExt, parseCvBuffer } from "./parse";
+import { detectExt, parseCvBuffer, sanitizeExtractedText } from "./parse";
 import { assertNoPiiLeaked, extractPii, redactPii, type ExtractedPii } from "./pii";
 import type { Role } from "./types";
 
@@ -29,7 +29,7 @@ export async function ingestFromText(params: {
   appliedRole: Role | null;
   overrides?: IngestOverrides;
 }): Promise<IngestResult> {
-  const rawText = params.rawText;
+  const rawText = sanitizeExtractedText(params.rawText);
   const extracted = extractPii(rawText, params.filename);
   const pii: ExtractedPii = {
     fullName: params.overrides?.fullName || extracted.fullName,

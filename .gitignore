@@ -8,10 +8,9 @@
 # production
 /build
 
-# env
-.env
-.env.local
-.env.*.local
+# env (but keep the template)
+.env*
+!.env.example
 
 # misc
 .DS_Store
@@ -28,3 +27,5 @@ skills-lock.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel

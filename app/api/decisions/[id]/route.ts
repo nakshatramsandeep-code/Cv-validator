@@ -12,14 +12,14 @@ import type { Decision } from "@/lib/types";
  * decision; it never recalls an email that already sent.
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const { decision, note } = (await req.json()) as { decision?: Decision; note?: string };
-
-  if (decision !== "advance" && decision !== "reject" && decision !== "pending") {
-    return NextResponse.json({ error: "decision must be advance, reject, or pending" }, { status: 400 });
-  }
-
   try {
+    const { id } = await params;
+    const { decision, note } = (await req.json()) as { decision?: Decision; note?: string };
+
+    if (decision !== "advance" && decision !== "reject" && decision !== "pending") {
+      return NextResponse.json({ error: "decision must be advance, reject, or pending" }, { status: 400 });
+    }
+
     const result = await setDecision(id, decision, note);
     return NextResponse.json({ ok: true, sendError: result.sendError });
   } catch (err) {

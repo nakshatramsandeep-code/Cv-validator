@@ -99,9 +99,15 @@ export async function runScoringPipeline(candidateId: string): Promise<void> {
   try {
     await assertRubricWeightsValid();
 
-    const pattern = await scoreAndStoreLayer(candidateId, "pattern", cvContent);
-    const rolePm = await scoreAndStoreLayer(candidateId, "role_pm", cvContent);
-    const roleSpm = await scoreAndStoreLayer(candidateId, "role_spm", cvContent);
+    // Independent Gemini calls run in parallel — a Vercel serverless function
+    // on the Hobby plan hard-caps at 10s regardless of `maxDuration`, and this
+    // pipeline makes several calls per candidate, so sequential awaits risk a
+    // timeout that returns Vercel's own (non-JSON) error page.
+    const [pattern, rolePm, roleSpm] = await Promise.all([
+      scoreAndStoreLayer(candidateId, "pattern", cvContent),
+      scoreAndStoreLayer(candidateId, "role_pm", cvContent),
+      scoreAndStoreLayer(candidateId, "role_spm", cvContent),
+    ]);
 
     const composite = computeCompositeResult({
       patternScore: pattern.layerScore,
@@ -115,36 +121,37 @@ export async function runScoringPipeline(candidateId: string): Promise<void> {
       composite.recommendedRole === "PM" ? composite.compositePm : composite.compositeSpm;
     const recommendedTier: Tier = composite.recommendedRole === "PM" ? composite.tierPm : composite.tierSpm;
 
-    const guardrail = await runGuardrail({
-      patternScores: pattern.scores.map((s) => ({
-        code: s.code,
-        score: s.score,
-        confidence: s.confidence,
-        evidence: s.evidence,
-      })),
-      roleScores: recommendedRoleScores.map((s) => ({
-        code: s.code,
-        score: s.score,
-        confidence: s.confidence,
-        evidence: s.evidence,
-      })),
-      role: composite.recommendedRole,
-      compositeForRole: recommendedComposite,
-      tierForRole: recommendedTier,
-    });
-
-    const finalTier: Tier = guardrail.tier_changed ? guardrail.final_tier : composite.finalTier;
-
     const allScores = [...pattern.scores, ...recommendedRoleScores];
     const topScores = [...allScores].sort((a, b) => b.score - a.score).slice(0, 3);
-    const whyRankedHere = await generateWhyRankedHere({ cvContent, topScores });
-
     const weakScores = allScores.filter((s) => s.score <= 2 || s.confidence !== "high");
-    const probes = await generateProbes({
-      cvContent,
-      jobDescription: jobDescriptionFor(composite.recommendedRole),
-      lowConfidenceScores: weakScores,
-    });
+
+    const [guardrail, whyRankedHere, probes] = await Promise.all([
+      runGuardrail({
+        patternScores: pattern.scores.map((s) => ({
+          code: s.code,
+          score: s.score,
+          confidence: s.confidence,
+          evidence: s.evidence,
+        })),
+        roleScores: recommendedRoleScores.map((s) => ({
+          code: s.code,
+          score: s.score,
+          confidence: s.confidence,
+          evidence: s.evidence,
+        })),
+        role: composite.recommendedRole,
+        compositeForRole: recommendedComposite,
+        tierForRole: recommendedTier,
+      }),
+      generateWhyRankedHere({ cvContent, topScores }),
+      generateProbes({
+        cvContent,
+        jobDescription: jobDescriptionFor(composite.recommendedRole),
+        lowConfidenceScores: weakScores,
+      }),
+    ]);
+
+    const finalTier: Tier = guardrail.tier_changed ? guardrail.final_tier : composite.finalTier;
 
     await sql`
       INSERT INTO candidate_scoring (
@@ -172,31 +179,35 @@ export async function runScoringPipeline(candidateId: string): Promise<void> {
     await sql`UPDATE candidates SET status = 'scored', error_message = NULL WHERE id = ${candidateId}`;
     await logAudit(candidateId, "scored", { tier: finalTier, potential_flag: guardrail.potential_flag });
 
-    if (finalTier === "INTERVIEW" || finalTier === "REVIEW") {
-      const briefMarkdown = await generateBrief({
-        cvContent,
-        jobDescription: jobDescriptionFor(composite.recommendedRole),
-        patternScores: pattern.scores.map((s) => ({ name: s.name, score: s.score, evidence: s.evidence })),
-        roleScores: recommendedRoleScores.map((s) => ({ name: s.name, score: s.score, evidence: s.evidence })),
-        role: composite.recommendedRole,
-      });
-      await sql`
-        INSERT INTO briefs (candidate_id, brief_markdown) VALUES (${candidateId}, ${briefMarkdown})
-        ON CONFLICT (candidate_id) DO UPDATE SET brief_markdown = EXCLUDED.brief_markdown, generated_at = now()
-      `;
-    }
-
     await ensureDecisionRow(candidateId);
     const existingDecision = await getDecision(candidateId);
     const alreadyDecided = existingDecision && existingDecision.decision !== "pending";
 
-    if (!alreadyDecided) {
-      if (finalTier === "PASS") {
-        await draftAndAutoReject(candidateId, cvContent, composite.recommendedRole);
-      } else {
-        await draftInviteOnly(candidateId, cvContent, composite.recommendedRole);
-      }
-    }
+    // Brief generation and draft/auto-reject are independent of each other —
+    // run them together rather than adding another sequential AI call.
+    const briefPromise =
+      finalTier === "INTERVIEW" || finalTier === "REVIEW"
+        ? generateBrief({
+            cvContent,
+            jobDescription: jobDescriptionFor(composite.recommendedRole),
+            patternScores: pattern.scores.map((s) => ({ name: s.name, score: s.score, evidence: s.evidence })),
+            roleScores: recommendedRoleScores.map((s) => ({ name: s.name, score: s.score, evidence: s.evidence })),
+            role: composite.recommendedRole,
+          }).then(
+            (briefMarkdown) => sql`
+              INSERT INTO briefs (candidate_id, brief_markdown) VALUES (${candidateId}, ${briefMarkdown})
+              ON CONFLICT (candidate_id) DO UPDATE SET brief_markdown = EXCLUDED.brief_markdown, generated_at = now()
+            `
+          )
+        : Promise.resolve();
+
+    const draftPromise = alreadyDecided
+      ? Promise.resolve()
+      : finalTier === "PASS"
+        ? draftAndAutoReject(candidateId, cvContent, composite.recommendedRole)
+        : draftInviteOnly(candidateId, cvContent, composite.recommendedRole);
+
+    await Promise.all([briefPromise, draftPromise]);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await sql`UPDATE candidates SET status = 'error', error_message = ${message} WHERE id = ${candidateId}`;
