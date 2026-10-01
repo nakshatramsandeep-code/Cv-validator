@@ -31,6 +31,16 @@ meghna.tiwari@proton.me
 Resolved a customs hold with the CHA through the night.
 `;
 
+// Real PDF extraction often splits a two-word heading like "PROFESSIONAL
+// SUMMARY" across two lines, each of which trivially looks like a name.
+const FIXTURE_4 = `PROFESSIONAL
+SUMMARY
+Priya Nair
+priya.nair.test@example.com
++91 90123 45678
+Led a 3-person ops team for a 3PL in Chennai.
+`;
+
 describe("extractPii", () => {
   it("extracts name, email and phone from a well-formed header", () => {
     const pii = extractPii(FIXTURE_1, "cv_1.pdf");
@@ -50,6 +60,12 @@ describe("extractPii", () => {
     const pii = extractPii(FIXTURE_3, "cv_12_meghna_tiwari.pdf");
     expect(pii.fullName).toBe("meghna tiwari");
     expect(pii.email).toBe("meghna.tiwari@proton.me");
+  });
+
+  it("skips section-heading lines (e.g. a wrapped 'PROFESSIONAL SUMMARY') to find the real name", () => {
+    const pii = extractPii(FIXTURE_4, "cv_4.pdf");
+    expect(pii.fullName).toBe("Priya Nair");
+    expect(pii.fullName).not.toMatch(/^(professional|summary)$/i);
   });
 });
 

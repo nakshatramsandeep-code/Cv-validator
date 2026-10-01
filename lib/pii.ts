@@ -45,6 +45,18 @@ function extractPhone(text: string): string | null {
  * (short, title-cased, no digits/@ symbol) near the top of the CV. Falls back
  * to a line near the email, then to the filename.
  */
+// Common resume section headings that trivially pass the name shape check
+// (single short word, letters only) but are never a candidate's actual name.
+const SECTION_HEADING_WORDS = new Set([
+  "summary", "profile", "objective", "overview", "about", "experience",
+  "education", "academics", "academic", "skills", "projects", "project",
+  "certifications", "certification", "achievements", "awards", "contact",
+  "references", "professional", "qualifications", "interests", "hobbies",
+  "languages", "publications", "declaration", "personal", "details",
+  "information", "career", "employment", "history", "background",
+  "curriculum", "vitae", "resume", "biodata", "profile summary",
+]);
+
 function extractName(text: string, email: string | null, filename: string): string | null {
   const lines = text
     .split(/\r?\n/)
@@ -59,10 +71,15 @@ function extractName(text: string, email: string | null, filename: string): stri
     if (/^(curriculum vitae|resume|cv)$/i.test(line)) return false;
     const words = line.split(/\s+/).filter(Boolean);
     if (words.length < 1 || words.length > 4) return false;
-    return words.every((w) => /^[A-Za-z][A-Za-z'.-]*$/.test(w));
+    if (!words.every((w) => /^[A-Za-z][A-Za-z'.-]*$/.test(w))) return false;
+    // Reject common section headings, e.g. "SUMMARY", "Education", "Professional".
+    const normalized = line.toLowerCase().trim();
+    if (SECTION_HEADING_WORDS.has(normalized)) return false;
+    if (words.length === 1 && SECTION_HEADING_WORDS.has(words[0].toLowerCase())) return false;
+    return true;
   };
 
-  for (const line of lines.slice(0, 5)) {
+  for (const line of lines.slice(0, 8)) {
     if (looksLikeName(line)) return line;
   }
 
