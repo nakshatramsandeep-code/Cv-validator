@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["mammoth", "adm-zip"],
+  serverExternalPackages: ["mammoth"],
 };
 
 export default nextConfig;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { Role } from "@/lib/types";
 
 type Phase = "queued" | "parsing" | "scoring" | "done" | "error";
@@ -31,11 +31,6 @@ function PhaseBadge({ phase }: { phase: Phase }) {
 export default function UploadPage() {
   const [role, setRole] = useState<Role | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
-  const [csvRows, setCsvRows] = useState<
-    { rowIndex: number; filename?: string; cv_text?: string; applied_role?: string; error?: string }[] | null
-  >(null);
-  const csvFileRef = useRef<HTMLInputElement>(null);
-  const csvFilesRef = useRef<HTMLInputElement>(null);
 
   function updateRow(key: string, patch: Partial<Row>) {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
@@ -108,96 +103,6 @@ export default function UploadPage() {
     );
   }
 
-  async function handleZip(file: File) {
-    const key = `${file.name}-${crypto.randomUUID()}`;
-    setRows((prev) => [{ key, filename: file.name, appliedRole: role, phase: "parsing" }, ...prev]);
-
-    const form = new FormData();
-    form.append("file", file);
-    if (role) form.append("appliedRole", role);
-    const res = await fetch("/api/upload/zip", { method: "POST", body: form });
-    const data = await res.json();
-
-    if (!res.ok) {
-      updateRow(key, { phase: "error", errorMessage: data.error ?? "ZIP upload failed" });
-      return;
-    }
-
-    setRows((prev) => prev.filter((r) => r.key !== key));
-    const entryRows: Row[] = (data.results as {
-      filename: string;
-      candidateId?: string;
-      status: "processing" | "error";
-      errorMessage?: string;
-    }[]).map((r) => ({
-      key: `${r.filename}-${crypto.randomUUID()}`,
-      filename: r.filename,
-      appliedRole: role,
-      phase: r.status === "error" ? "error" : "scoring",
-      candidateId: r.candidateId,
-      errorMessage: r.errorMessage,
-    }));
-    setRows((prev) => [...entryRows, ...prev]);
-
-    const toScore = entryRows.filter((r) => r.phase === "scoring" && r.candidateId);
-    await runQueue(
-      toScore.map((r) => r.key),
-      async (rowKey) => {
-        const row = toScore.find((r) => r.key === rowKey)!;
-        await scoreRow(rowKey, row.candidateId!);
-      }
-    );
-  }
-
-  async function handleCsvPreview() {
-    const csvFile = csvFileRef.current?.files?.[0];
-    if (!csvFile) return;
-    const form = new FormData();
-    form.append("csvFile", csvFile);
-    for (const f of Array.from(csvFilesRef.current?.files ?? [])) form.append("files", f);
-
-    const res = await fetch("/api/upload/csv/preview", { method: "POST", body: form });
-    const data = await res.json();
-    if (res.ok) setCsvRows(data.rows);
-  }
-
-  async function handleCsvCommit() {
-    const csvFile = csvFileRef.current?.files?.[0];
-    if (!csvFile) return;
-    const form = new FormData();
-    form.append("csvFile", csvFile);
-    for (const f of Array.from(csvFilesRef.current?.files ?? [])) form.append("files", f);
-
-    const res = await fetch("/api/upload/csv/commit", { method: "POST", body: form });
-    const data = await res.json();
-    if (!res.ok) return;
-
-    const entryRows: Row[] = (data.results as {
-      filename?: string;
-      candidateId?: string;
-      status: "processing" | "error";
-      errorMessage?: string;
-    }[]).map((r) => ({
-      key: `${r.filename ?? "row"}-${crypto.randomUUID()}`,
-      filename: r.filename ?? "(csv row)",
-      appliedRole: role,
-      phase: r.status === "error" ? "error" : "scoring",
-      candidateId: r.candidateId,
-      errorMessage: r.errorMessage,
-    }));
-    setRows((prev) => [...entryRows, ...prev]);
-    setCsvRows(null);
-
-    const toScore = entryRows.filter((r) => r.phase === "scoring" && r.candidateId);
-    await runQueue(
-      toScore.map((r) => r.key),
-      async (rowKey) => {
-        const row = toScore.find((r) => r.key === rowKey)!;
-        await scoreRow(rowKey, row.candidateId!);
-      }
-    );
-  }
-
   function retry(row: Row) {
     if (row.file) {
       parseAndScoreFile(row.key, row.file, row.appliedRole);
@@ -250,67 +155,6 @@ export default function UploadPage() {
             />
           </label>
         </div>
-      </div>
-
-      <div className="card p-4 space-y-3">
-        <h2 className="text-sm font-semibold">Bulk import: ZIP of CVs</h2>
-        <input
-          type="file"
-          accept=".zip"
-          onChange={(e) => e.target.files?.[0] && handleZip(e.target.files[0])}
-          className="text-sm"
-        />
-      </div>
-
-      <div className="card p-4 space-y-3">
-        <h2 className="text-sm font-semibold">Bulk import: CSV</h2>
-        <p className="text-xs text-gray-500">
-          Columns: <code>filename</code> or <code>cv_text</code>, <code>applied_role</code> (PM/SPM), optional{" "}
-          <code>name</code>, <code>email</code>, <code>phone</code>. If using <code>filename</code>, also select the
-          matching CV files below.
-        </p>
-        <div className="flex gap-3 items-center text-sm">
-          <input ref={csvFileRef} type="file" accept=".csv" />
-          <input ref={csvFilesRef} type="file" multiple accept=".pdf,.docx,.txt" />
-          <button className="btn-secondary" onClick={handleCsvPreview}>
-            Preview
-          </button>
-        </div>
-
-        {csvRows && (
-          <div className="border border-gray-100 rounded-xl overflow-x-auto text-sm">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="text-left p-2">#</th>
-                  <th className="text-left p-2">Filename / text</th>
-                  <th className="text-left p-2">Role</th>
-                  <th className="text-left p-2">Error</th>
-                </tr>
-              </thead>
-              <tbody>
-                {csvRows.map((r) => (
-                  <tr key={r.rowIndex} className="border-t">
-                    <td className="p-2">{r.rowIndex + 1}</td>
-                    <td className="p-2">{r.filename ?? (r.cv_text ? "(inline text)" : "")}</td>
-                    <td className="p-2">{r.applied_role}</td>
-                    <td className="p-2 text-red-600">{r.error}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="p-2">
-              <button
-                className="btn-primary"
-                disabled={csvRows.some((r) => r.error)}
-                onClick={handleCsvCommit}
-                title={csvRows.some((r) => r.error) ? "Fix errors before processing" : ""}
-              >
-                Process {csvRows.length} rows
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="card">

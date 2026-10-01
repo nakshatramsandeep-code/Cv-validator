@@ -119,7 +119,7 @@ page groups them by decision.
   full ranked candidate table.
 - `/pipeline` — Kanban-style board: Needs review / Advancing / Declined, with one-click
   Advance/Reject/Undo.
-- `/upload` — Upload CVs (single/multi-file, ZIP, or CSV bulk import), applied role optional.
+- `/upload` — Upload CVs (single or multi-file, drag-and-drop), applied role optional.
 - `/candidate/[id]` — Full scorecard: pattern layer, both role-fit layers, guardrail notes, why-
   ranked-here, probe questions, structured interview brief, decision controls, and the editable
   email draft.
