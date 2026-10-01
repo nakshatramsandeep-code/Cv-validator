@@ -26,7 +26,7 @@ export interface IngestOverrides {
 export async function ingestFromText(params: {
   rawText: string;
   filename: string;
-  appliedRole: Role;
+  appliedRole: Role | null;
   overrides?: IngestOverrides;
 }): Promise<IngestResult> {
   const rawText = params.rawText;
@@ -74,7 +74,7 @@ export async function ingestFromText(params: {
 export async function ingestCv(params: {
   buffer: Buffer;
   filename: string;
-  appliedRole: Role;
+  appliedRole: Role | null;
   overrides?: IngestOverrides;
 }): Promise<IngestResult> {
   const ext = detectExt(params.filename);

@@ -2,16 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import type { EmailDraft } from "@/lib/types";
+import type { Decision, EmailDraft } from "@/lib/types";
 
 export default function CandidateActions({
   candidateId,
+  decision,
   draft,
-  emailConfigured,
 }: {
   candidateId: string;
+  decision: Decision;
   draft: EmailDraft | null;
-  emailConfigured: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
@@ -27,37 +27,46 @@ export default function CandidateActions({
     router.refresh();
   }
 
-  async function send() {
-    setBusy("send");
+  async function decide(next: Decision) {
+    setBusy(next);
     setError(null);
-    const res = await fetch(`/api/send/${candidateId}`, { method: "POST" });
+    const res = await fetch(`/api/decisions/${candidateId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision: next }),
+    });
     const data = await res.json();
     setBusy(null);
-    if (!res.ok) setError(data.error ?? "Send failed");
+    if (!res.ok) setError(data.error ?? "Could not update decision");
+    else if (data.sendError) setError(`Decision saved, but send failed: ${data.sendError}`);
     router.refresh();
   }
 
+  const sent = draft?.status === "sent";
+
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col items-end gap-2">
       <button className="btn-secondary" disabled={busy !== null} onClick={rescore}>
-        {busy === "rescore" ? "Rescoring..." : "Rescore"}
+        {busy === "rescore" ? "Re-running..." : "Re-run pipeline"}
       </button>
-      {draft && (
-        <button
-          className="btn-primary"
-          disabled={busy !== null || draft.status === "sent" || !emailConfigured}
-          onClick={send}
-        >
-          {!emailConfigured
-            ? "Email not configured"
-            : busy === "send"
-              ? "Sending..."
-              : draft.status === "sent"
-                ? "Already sent"
-                : "Confirm & Send"}
-        </button>
-      )}
-      {error && <span className="text-sm text-red-600">{error}</span>}
+      <div className="flex gap-2">
+        {decision !== "advance" && (
+          <button className="btn-primary" disabled={busy !== null || sent} onClick={() => decide("advance")}>
+            {busy === "advance" ? "Advancing..." : "Advance"}
+          </button>
+        )}
+        {decision !== "reject" && (
+          <button className="btn-danger" disabled={busy !== null || sent} onClick={() => decide("reject")}>
+            {busy === "reject" ? "Rejecting..." : "Reject"}
+          </button>
+        )}
+        {decision !== "pending" && (
+          <button className="btn-secondary" disabled={busy !== null} onClick={() => decide("pending")}>
+            {busy === "pending" ? "..." : "Back to pending"}
+          </button>
+        )}
+      </div>
+      {error && <span className="text-xs text-red-600 max-w-xs text-right">{error}</span>}
     </div>
   );
 }

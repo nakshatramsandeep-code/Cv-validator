@@ -1,13 +1,19 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
-import type { RubricCriterion } from "./types";
+import type { ConfidenceLevel, CriterionLayer, Role, RubricCriterion } from "./types";
 import {
   briefSystemPrompt,
   briefUserPrompt,
   emailSystemPrompt,
   emailUserPrompt,
+  guardrailSystemPrompt,
+  guardrailUserPrompt,
+  probesSystemPrompt,
+  probesUserPrompt,
   scoringSystemPrompt,
   scoringUserPrompt,
+  whyRankedHereSystemPrompt,
+  whyRankedHereUserPrompt,
 } from "./prompts";
 
 function getClient(): GoogleGenAI {
@@ -23,48 +29,6 @@ function getModel(): string {
   }
   return process.env.GEMINI_MODEL;
 }
-
-const scoreItemSchema = z.object({
-  criterion_id: z.string(),
-  score: z.number().int().min(1).max(5),
-  reason: z.string().min(1),
-});
-const scoresResponseSchema = z.array(scoreItemSchema);
-export type ScoreItem = z.infer<typeof scoreItemSchema>;
-
-const SCORE_RESPONSE_SCHEMA = {
-  type: Type.ARRAY,
-  items: {
-    type: Type.OBJECT,
-    properties: {
-      criterion_id: { type: Type.STRING },
-      score: { type: Type.INTEGER },
-      reason: { type: Type.STRING },
-    },
-    required: ["criterion_id", "score", "reason"],
-    propertyOrdering: ["criterion_id", "score", "reason"],
-  },
-};
-
-const briefResponseSchemaZod = z.object({ brief_text: z.string().min(1) });
-const BRIEF_RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: { brief_text: { type: Type.STRING } },
-  required: ["brief_text"],
-};
-
-const emailResponseSchemaZod = z.object({
-  subject: z.string().min(1),
-  body: z.string().min(1),
-});
-const EMAIL_RESPONSE_SCHEMA = {
-  type: Type.OBJECT,
-  properties: {
-    subject: { type: Type.STRING },
-    body: { type: Type.STRING },
-  },
-  required: ["subject", "body"],
-};
 
 async function generateJson<T>(params: {
   systemInstruction: string;
@@ -101,19 +65,49 @@ async function generateJson<T>(params: {
   );
 }
 
-/** Scores a candidate's (PII-stripped) CV against one role's rubric criteria. */
-export async function scoreCandidate(
+// ---------------------------------------------------------------------------
+// Layer scoring (pattern / role_pm / role_spm)
+// ---------------------------------------------------------------------------
+
+const confidenceSchema = z.enum(["high", "medium", "low"]);
+const layerScoreItemSchema = z.object({
+  criterion_id: z.string(),
+  score: z.number().int().min(0).max(4),
+  confidence: confidenceSchema,
+  evidence: z.string().min(1),
+});
+const layerScoreResponseSchema = z.array(layerScoreItemSchema);
+export type LayerScoreItem = z.infer<typeof layerScoreItemSchema>;
+
+const LAYER_SCORE_RESPONSE_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      criterion_id: { type: Type.STRING },
+      score: { type: Type.INTEGER },
+      confidence: { type: Type.STRING, enum: ["high", "medium", "low"] },
+      evidence: { type: Type.STRING },
+    },
+    required: ["criterion_id", "score", "confidence", "evidence"],
+    propertyOrdering: ["criterion_id", "score", "confidence", "evidence"],
+  },
+};
+
+/** Scores a candidate's (PII-stripped) CV against one layer's rubric criteria. */
+export async function scoreLayer(
+  layer: CriterionLayer,
   criteria: RubricCriterion[],
   cvContent: string
-): Promise<ScoreItem[]> {
+): Promise<LayerScoreItem[]> {
   const validCriterionIds = new Set(criteria.map((c) => c.id));
 
   return generateJson({
-    systemInstruction: scoringSystemPrompt(),
+    systemInstruction: scoringSystemPrompt(layer),
     userPrompt: scoringUserPrompt(criteria, cvContent),
-    responseSchema: SCORE_RESPONSE_SCHEMA,
+    responseSchema: LAYER_SCORE_RESPONSE_SCHEMA,
     parse: (raw) => {
-      const parsed = scoresResponseSchema.parse(raw);
+      const parsed = layerScoreResponseSchema.parse(raw);
       const seen = new Set<string>();
       for (const item of parsed) {
         if (!validCriterionIds.has(item.criterion_id)) {
@@ -131,11 +125,112 @@ export async function scoreCandidate(
   });
 }
 
-/** Generates a 3-sentence interview brief for an above-the-line candidate. */
+// ---------------------------------------------------------------------------
+// Guardrail
+// ---------------------------------------------------------------------------
+
+const guardrailResponseSchemaZod = z.object({
+  potential_flag: z.boolean(),
+  potential_reason: z.string(),
+  tier_changed: z.boolean(),
+  final_tier: z.enum(["INTERVIEW", "REVIEW", "PASS"]),
+  guardrail_notes: z.string().min(1),
+});
+export type GuardrailResult = z.infer<typeof guardrailResponseSchemaZod>;
+
+const GUARDRAIL_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    potential_flag: { type: Type.BOOLEAN },
+    potential_reason: { type: Type.STRING },
+    tier_changed: { type: Type.BOOLEAN },
+    final_tier: { type: Type.STRING, enum: ["INTERVIEW", "REVIEW", "PASS"] },
+    guardrail_notes: { type: Type.STRING },
+  },
+  required: ["potential_flag", "potential_reason", "tier_changed", "final_tier", "guardrail_notes"],
+};
+
+export async function runGuardrail(params: {
+  patternScores: { code: string; score: number; confidence: ConfidenceLevel; evidence: string }[];
+  roleScores: { code: string; score: number; confidence: ConfidenceLevel; evidence: string }[];
+  role: Role;
+  compositeForRole: number;
+  tierForRole: "INTERVIEW" | "REVIEW" | "PASS";
+}): Promise<GuardrailResult> {
+  return generateJson({
+    systemInstruction: guardrailSystemPrompt(),
+    userPrompt: guardrailUserPrompt(params),
+    responseSchema: GUARDRAIL_RESPONSE_SCHEMA,
+    parse: (raw) => guardrailResponseSchemaZod.parse(raw),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Why ranked here (one sentence)
+// ---------------------------------------------------------------------------
+
+const whyRankedSchemaZod = z.object({ sentence: z.string().min(1) });
+const WHY_RANKED_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: { sentence: { type: Type.STRING } },
+  required: ["sentence"],
+};
+
+export async function generateWhyRankedHere(params: {
+  cvContent: string;
+  topScores: { name: string; score: number; evidence: string }[];
+}): Promise<string> {
+  const result = await generateJson({
+    systemInstruction: whyRankedHereSystemPrompt(),
+    userPrompt: whyRankedHereUserPrompt(params),
+    responseSchema: WHY_RANKED_RESPONSE_SCHEMA,
+    parse: (raw) => whyRankedSchemaZod.parse(raw),
+  });
+  return result.sentence;
+}
+
+// ---------------------------------------------------------------------------
+// Probe questions
+// ---------------------------------------------------------------------------
+
+const probesSchemaZod = z.object({ probes: z.array(z.string().min(1)).min(1) });
+const PROBES_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: { probes: { type: Type.ARRAY, items: { type: Type.STRING } } },
+  required: ["probes"],
+};
+
+export async function generateProbes(params: {
+  cvContent: string;
+  jobDescription: string;
+  lowConfidenceScores: { name: string; score: number; confidence: ConfidenceLevel; evidence: string }[];
+}): Promise<string[]> {
+  const result = await generateJson({
+    systemInstruction: probesSystemPrompt(),
+    userPrompt: probesUserPrompt(params),
+    responseSchema: PROBES_RESPONSE_SCHEMA,
+    parse: (raw) => probesSchemaZod.parse(raw),
+  });
+  return result.probes;
+}
+
+// ---------------------------------------------------------------------------
+// Structured interview brief
+// ---------------------------------------------------------------------------
+
+const briefResponseSchemaZod = z.object({ brief_markdown: z.string().min(1) });
+const BRIEF_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: { brief_markdown: { type: Type.STRING } },
+  required: ["brief_markdown"],
+};
+
 export async function generateBrief(params: {
   cvContent: string;
   jobDescription: string;
-  scores: { criterionName: string; score: number; reason: string }[];
+  patternScores: { name: string; score: number; evidence: string }[];
+  roleScores: { name: string; score: number; evidence: string }[];
+  role: Role;
 }): Promise<string> {
   const result = await generateJson({
     systemInstruction: briefSystemPrompt(),
@@ -144,12 +239,30 @@ export async function generateBrief(params: {
     parse: (raw) => briefResponseSchemaZod.parse(raw),
   });
 
-  const sentenceCount = (result.brief_text.match(/[.!?](?:\s|$)/g) ?? []).length;
-  if (sentenceCount !== 3) {
-    throw new Error(`Brief must be exactly 3 sentences, got ${sentenceCount}: ${result.brief_text}`);
+  for (const heading of ["### Summary", "### Strengths", "### Risks & gaps to probe", "### Suggested focus areas"]) {
+    if (!result.brief_markdown.includes(heading)) {
+      throw new Error(`Brief is missing required section: ${heading}`);
+    }
   }
-  return result.brief_text;
+  return result.brief_markdown;
 }
+
+// ---------------------------------------------------------------------------
+// Email drafts
+// ---------------------------------------------------------------------------
+
+const emailResponseSchemaZod = z.object({
+  subject: z.string().min(1),
+  body: z.string().min(1),
+});
+const EMAIL_RESPONSE_SCHEMA = {
+  type: Type.OBJECT,
+  properties: {
+    subject: { type: Type.STRING },
+    body: { type: Type.STRING },
+  },
+  required: ["subject", "body"],
+};
 
 /** Generates an email draft (invite or rejection). Uses {{FIRST_NAME}} as the greeting token. */
 export async function generateEmailDraft(params: {

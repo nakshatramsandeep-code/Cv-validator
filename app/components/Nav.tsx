@@ -6,10 +6,8 @@ import clsx from "clsx";
 
 const LINKS = [
   { href: "/", label: "Dashboard" },
-  { href: "/upload", label: "Upload" },
-  { href: "/candidates", label: "All Candidates" },
-  { href: "/rubric", label: "Rubric" },
-  { href: "/analytics", label: "Analytics" },
+  { href: "/pipeline", label: "Pipeline" },
+  { href: "/upload", label: "Upload CVs" },
 ];
 
 export default function Nav() {

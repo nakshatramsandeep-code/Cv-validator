@@ -8,7 +8,7 @@ type Phase = "queued" | "parsing" | "scoring" | "done" | "error";
 interface Row {
   key: string;
   filename: string;
-  appliedRole: Role;
+  appliedRole: Role | null;
   phase: Phase;
   candidateId?: string;
   errorMessage?: string;
@@ -29,7 +29,7 @@ function PhaseBadge({ phase }: { phase: Phase }) {
 }
 
 export default function UploadPage() {
-  const [role, setRole] = useState<Role>("PM");
+  const [role, setRole] = useState<Role | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [csvRows, setCsvRows] = useState<
     { rowIndex: number; filename?: string; cv_text?: string; applied_role?: string; error?: string }[] | null
@@ -56,11 +56,11 @@ export default function UploadPage() {
     }
   }
 
-  async function parseAndScoreFile(key: string, file: File, appliedRole: Role) {
+  async function parseAndScoreFile(key: string, file: File, appliedRole: Role | null) {
     updateRow(key, { phase: "parsing" });
     const form = new FormData();
     form.append("file", file);
-    form.append("appliedRole", appliedRole);
+    if (appliedRole) form.append("appliedRole", appliedRole);
     try {
       const res = await fetch("/api/upload/parse", { method: "POST", body: form });
       const data = await res.json();
@@ -114,7 +114,7 @@ export default function UploadPage() {
 
     const form = new FormData();
     form.append("file", file);
-    form.append("appliedRole", role);
+    if (role) form.append("appliedRole", role);
     const res = await fetch("/api/upload/zip", { method: "POST", body: form });
     const data = await res.json();
 
@@ -211,17 +211,21 @@ export default function UploadPage() {
       <div>
         <h1 className="text-xl font-semibold mb-1">Upload CVs</h1>
         <p className="text-sm text-gray-500">
-          Each CV is parsed, PII-stripped, scored against both rubrics, and ranked automatically.
+          PDF, DOCX or TXT. Each candidate is scored automatically the moment it&apos;s uploaded — same 4-step
+          pipeline (score, guardrail, interview brief, email drafts) used for the rest of the shortlist. If it
+          lands as PASS, the rejection sends right away; INTERVIEW or REVIEW candidates wait for your
+          Advance/Reject call.
         </p>
       </div>
 
       <div className="card p-4 space-y-3">
-        <label className="text-sm font-medium block">Role for this batch</label>
+        <label className="text-sm font-medium block">Applied role</label>
         <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as Role)}
+          value={role ?? ""}
+          onChange={(e) => setRole(e.target.value === "" ? null : (e.target.value as Role))}
           className="border border-gray-300 rounded-md px-3 py-1.5 text-sm"
         >
+          <option value="">Not specified — score against both</option>
           <option value="PM">Product Manager</option>
           <option value="SPM">Senior Product Manager</option>
         </select>

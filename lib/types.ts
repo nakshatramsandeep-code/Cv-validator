@@ -6,9 +6,18 @@ export type EmailType = "invite" | "rejection";
 
 export type EmailStatus = "draft" | "sent" | "failed";
 
+export type CriterionLayer = "pattern" | "role_pm" | "role_spm";
+
+export type ConfidenceLevel = "high" | "medium" | "low";
+
+export type Tier = "INTERVIEW" | "REVIEW" | "PASS";
+
+export type Decision = "pending" | "advance" | "reject";
+
 export interface RubricCriterion {
   id: string;
-  role: Role;
+  layer: CriterionLayer;
+  code: string;
   name: string;
   description: string;
   weight: number;
@@ -25,7 +34,7 @@ export interface RedactionReport {
 export interface Candidate {
   id: string;
   created_at: string;
-  applied_role: Role;
+  applied_role: Role | null;
   original_filename: string;
   status: CandidateStatus;
   error_message: string | null;
@@ -43,21 +52,48 @@ export interface CandidatePii {
 export interface Score {
   id: string;
   candidate_id: string;
-  role: Role;
+  layer: CriterionLayer;
   criterion_id: string;
   score: number;
-  reason: string;
-  points: number;
-  /** Joined in for display; not a DB column. */
+  confidence: ConfidenceLevel;
+  evidence: string;
   criterion_name?: string;
+  criterion_code?: string;
+}
+
+export interface CandidateScoring {
+  candidate_id: string;
+  pattern_score: number;
+  role_score_pm: number;
+  composite_pm: number;
+  tier_pm: Tier;
+  role_score_spm: number;
+  composite_spm: number;
+  tier_spm: Tier;
+  recommended_role: Role;
+  reroute_suggested: boolean;
+  best_composite: number;
+  final_tier: Tier;
+  potential_flag: boolean;
+  potential_reason: string | null;
+  guardrail_notes: string | null;
+  tier_changed: boolean;
+  why_ranked_here: string | null;
+  probes: string[] | null;
+  updated_at: string;
 }
 
 export interface Brief {
-  id: string;
   candidate_id: string;
-  role: Role;
-  brief_text: string;
+  brief_markdown: string;
   generated_at: string;
+}
+
+export interface DecisionRecord {
+  candidate_id: string;
+  decision: Decision;
+  note: string | null;
+  decided_at: string | null;
 }
 
 export interface EmailDraft {
@@ -75,23 +111,12 @@ export interface EmailDraft {
   updated_at: string;
 }
 
-export interface CandidateRoleTotal {
-  candidate_id: string;
-  role: Role;
-  total_points: number;
-}
-
 /** A fully assembled candidate row for dashboard/table rendering. */
 export interface CandidateWithScoring {
   candidate: Candidate;
   first_name: string | null;
-  pmTotal: number | null;
-  spmTotal: number | null;
-  appliedTotal: number | null;
-  scores: Score[];
+  scoring: CandidateScoring | null;
   brief: Brief | null;
   draft: EmailDraft | null;
-  rank: number | null;
-  aboveLine: boolean;
-  crossRoleAboveLine: boolean;
+  decision: Decision;
 }

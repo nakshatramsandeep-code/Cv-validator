@@ -13,8 +13,9 @@ export interface CsvRow {
 
 /**
  * Parses a bulk-import CSV: columns `filename` or `cv_text` (at least one
- * required), `applied_role` (PM/SPM, required), and optional `name`, `email`,
- * `phone` overrides. Validation only — does not touch the database.
+ * required), optional `applied_role` (PM/SPM, blank means score against both
+ * with no applied-role preference), and optional `name`, `email`, `phone`
+ * overrides. Validation only — does not touch the database.
  */
 export function parseCsvRows(csvText: string): CsvRow[] {
   const records = parse(csvText, {
@@ -34,8 +35,8 @@ export function parseCsvRows(csvText: string): CsvRow[] {
       phone: r.phone || undefined,
     };
 
-    if (row.applied_role !== "PM" && row.applied_role !== "SPM") {
-      row.error = `Invalid applied_role "${row.applied_role ?? ""}". Must be PM or SPM.`;
+    if (row.applied_role && row.applied_role !== "PM" && row.applied_role !== "SPM") {
+      row.error = `Invalid applied_role "${row.applied_role}". Must be PM, SPM, or left blank.`;
     } else if (!row.filename && !row.cv_text) {
       row.error = "Row must have either a filename or cv_text column filled in.";
     }

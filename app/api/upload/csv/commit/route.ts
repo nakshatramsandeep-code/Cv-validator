@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       results.push({ rowIndex: row.rowIndex, filename: row.filename, status: "error", errorMessage: row.error });
       continue;
     }
-    const appliedRole = row.applied_role as Role;
+    const appliedRole: Role | null = row.applied_role === "PM" || row.applied_role === "SPM" ? row.applied_role : null;
     const overrides = { fullName: row.name, email: row.email, phone: row.phone };
 
     try {

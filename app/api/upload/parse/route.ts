@@ -7,13 +7,11 @@ import type { Role } from "@/lib/types";
 export async function POST(req: NextRequest) {
   const form = await req.formData();
   const file = form.get("file");
-  const appliedRole = form.get("appliedRole") as Role | null;
+  const rawRole = form.get("appliedRole");
+  const appliedRole: Role | null = rawRole === "PM" || rawRole === "SPM" ? rawRole : null;
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
-  }
-  if (appliedRole !== "PM" && appliedRole !== "SPM") {
-    return NextResponse.json({ error: "appliedRole must be PM or SPM" }, { status: 400 });
   }
 
   try {

@@ -1,62 +1,185 @@
 import { notFound } from "next/navigation";
 import { getCandidateDetail } from "@/lib/candidate-detail";
 import CandidateActions from "./CandidateActions";
-import type { Role } from "@/lib/types";
+import DraftEditor from "./DraftEditor";
+import type { CriterionLayer, Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+
+function ScoreRow({ score }: { score: Score }) {
+  const confidenceStyle =
+    score.confidence === "high"
+      ? "text-green-700"
+      : score.confidence === "medium"
+        ? "text-amber-700"
+        : "text-gray-500";
+  return (
+    <div className="border rounded-md p-3 text-sm">
+      <div className="flex justify-between font-medium">
+        <span>
+          {score.criterion_code} · {score.criterion_name}
+        </span>
+        <span className={confidenceStyle}>
+          {score.score}/4 · {score.confidence} confidence
+        </span>
+      </div>
+      <p className="text-xs text-gray-500 mt-1">{score.evidence}</p>
+    </div>
+  );
+}
+
+function BriefSections({ markdown }: { markdown: string }) {
+  const sections = markdown
+    .split(/\n(?=### )/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return (
+    <div className="space-y-3">
+      {sections.map((section) => {
+        const [headingLine, ...rest] = section.split("\n");
+        const heading = headingLine.replace(/^###\s*/, "");
+        return (
+          <div key={heading}>
+            <h3 className="text-xs font-semibold uppercase text-gray-500">{heading}</h3>
+            <div className="text-sm mt-1 whitespace-pre-wrap">{rest.join("\n").trim()}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default async function CandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const detail = await getCandidateDetail(id);
   if (!detail) notFound();
 
-  const { candidate, pii, scoresByRole, totalsByRole, briefs, draft } = detail;
-  const roles: Role[] = ["PM", "SPM"];
+  const { candidate, fullName, scoring, scoresByLayer, brief, decision, draft } = detail;
+  const roleLabel: Record<"PM" | "SPM", string> = { PM: "Product Manager fit", SPM: "Senior PM fit" };
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-xl font-semibold">{pii.full_name ?? "(unnamed)"}</h1>
-        <p className="text-sm text-gray-500">
-          {candidate.original_filename} · Applied for {candidate.applied_role} · Status: {candidate.status}
-        </p>
-        {candidate.error_message && <p className="text-sm text-red-600 mt-1">{candidate.error_message}</p>}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">{fullName ?? "(unnamed)"}</h1>
+          <p className="text-sm text-gray-500">
+            Applied: {candidate.applied_role ?? "UNSPECIFIED"}
+            {candidate.status === "error" && (
+              <span className="text-red-600"> · {candidate.error_message}</span>
+            )}
+          </p>
+        </div>
+        <CandidateActions candidateId={candidate.id} decision={decision} draft={draft} />
       </div>
 
-      <CandidateActions
-        candidateId={candidate.id}
-        draft={draft}
-        emailConfigured={Boolean(process.env.RESEND_API_KEY)}
-      />
+      {scoring?.guardrail_notes && (
+        <div
+          className={`card p-3 text-sm ${scoring.potential_flag ? "border-purple-300 bg-purple-50" : "bg-gray-50"}`}
+        >
+          {scoring.guardrail_notes}
+        </div>
+      )}
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {roles.map((role) => (
-          <div key={role} className="card p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">{role} scorecard</h2>
-              <span className="text-sm text-gray-500">{totalsByRole[role] ?? "-"}/100</span>
+      {scoring && (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="card p-3">
+              <div className="text-xs text-gray-500">Recommended role</div>
+              <div className="text-lg font-semibold">
+                {scoring.recommended_role}
+                {scoring.reroute_suggested && candidate.applied_role && (
+                  <span className="text-xs text-purple-600 block font-normal">
+                    applied {candidate.applied_role}, better fit {scoring.recommended_role}
+                  </span>
+                )}
+              </div>
             </div>
-            {briefs[role] && (
-              <div className="bg-gray-50 border rounded-md p-3 text-sm">{briefs[role]!.brief_text}</div>
-            )}
-            <div className="space-y-2">
-              {scoresByRole[role].map((s) => (
-                <div key={s.criterion_id} className="border rounded-md p-2 text-sm">
-                  <div className="flex justify-between font-medium">
-                    <span>{s.criterion_name}</span>
-                    <span>
-                      {s.score}/5 · {Math.round(s.points)} pts
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">{s.reason}</p>
-                </div>
-              ))}
-              {scoresByRole[role].length === 0 && (
-                <p className="text-sm text-gray-400">Not scored yet.</p>
-              )}
+            <div className="card p-3">
+              <div className="text-xs text-gray-500">Final tier</div>
+              <div className="text-lg font-semibold">{scoring.final_tier}</div>
+            </div>
+            <div className="card p-3">
+              <div className="text-xs text-gray-500">Pattern score</div>
+              <div className="text-lg font-semibold">{scoring.pattern_score.toFixed(1)} / 100</div>
             </div>
           </div>
-        ))}
+
+          {scoring.why_ranked_here && (
+            <div className="card p-3">
+              <h2 className="text-xs font-semibold uppercase text-gray-500">Why ranked here</h2>
+              <p className="text-sm mt-1">{scoring.why_ranked_here}</p>
+            </div>
+          )}
+
+          <div className="card p-4 space-y-3">
+            <h2 className="font-semibold">Layer A — Hire pattern (60% of composite)</h2>
+            <div className="space-y-2">
+              {scoresByLayer.pattern.map((s) => (
+                <ScoreRow key={s.id} score={s} />
+              ))}
+            </div>
+          </div>
+
+          {(["PM", "SPM"] as const).map((role) => {
+            const layer: CriterionLayer = role === "PM" ? "role_pm" : "role_spm";
+            const composite = role === "PM" ? scoring.composite_pm : scoring.composite_spm;
+            const tier = role === "PM" ? scoring.tier_pm : scoring.tier_spm;
+            return (
+              <div key={role} className="card p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold">{roleLabel[role]}</h2>
+                  <span className="text-sm text-gray-500">
+                    Composite {composite.toFixed(1)} · Tier {tier}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {scoresByLayer[layer].map((s) => (
+                    <ScoreRow key={s.id} score={s} />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+
+          {scoring.probes && scoring.probes.length > 0 && (
+            <div className="card p-4">
+              <h2 className="font-semibold mb-2">Probe questions from scoring</h2>
+              <ul className="list-disc pl-5 text-sm space-y-1">
+                {scoring.probes.map((p, i) => (
+                  <li key={i}>{p}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </>
+      )}
+
+      {brief && (
+        <div className="card p-4">
+          <h2 className="font-semibold mb-2">Interview brief</h2>
+          <BriefSections markdown={brief.brief_markdown} />
+        </div>
+      )}
+
+      <div className="card p-4 space-y-2">
+        <h2 className="font-semibold">Shortlist decision (human — the last thing you touch)</h2>
+        <p className="text-xs text-gray-500">
+          Advance sends the interview invite immediately. Reject sends the rejection immediately. Both go
+          straight to the candidate&apos;s stored email the moment you click, no extra confirmation.
+        </p>
+      </div>
+
+      <div className="card p-4 space-y-2">
+        <h2 className="font-semibold">Draft emails</h2>
+        <p className="text-xs text-gray-500">
+          These send automatically when you Advance or Reject above. You can also edit and send one manually
+          here anytime.
+        </p>
+        {draft ? (
+          <DraftEditor candidateId={candidate.id} draft={draft} />
+        ) : (
+          <p className="text-sm text-gray-400">No draft yet.</p>
+        )}
       </div>
 
       <div className="card p-4 space-y-2">
