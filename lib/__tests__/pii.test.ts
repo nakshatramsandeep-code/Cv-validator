@@ -91,4 +91,17 @@ describe("redactPii + assertNoPiiLeaked", () => {
     const leaked = "Rohan Desai still appears here.";
     expect(() => assertNoPiiLeaked(leaked, pii)).toThrow();
   });
+
+  it("redacts an email containing the person's name as one clean token, not fragments", () => {
+    // Regression test: email/URL/phone must be redacted before the loose
+    // name-substring match, otherwise "devika.nair@..." gets chopped into
+    // "[REDACTED].[REDACTED]@..." instead of one "[REDACTED]".
+    const fixture = `Devika Nair\nChennai, India | devika.nair.test@example.com | +91 90000 11223`;
+    const pii = extractPii(fixture, "cv.txt");
+    const { cvContent } = redactPii(fixture, pii);
+
+    expect(cvContent).not.toMatch(/\[REDACTED\]\s*\[REDACTED\]/);
+    expect(cvContent).not.toMatch(/\[REDACTED\]\.\[REDACTED\]/);
+    expect(() => assertNoPiiLeaked(cvContent, pii)).not.toThrow();
+  });
 });

@@ -125,17 +125,9 @@ export function redactPii(
     urls_removed: 0,
   };
 
-  if (pii.fullName) {
-    for (const variant of nameVariants(pii.fullName)) {
-      const re = new RegExp(escapeRegex(variant), "gi");
-      const matches = text.match(re);
-      if (matches) {
-        report.name_removed += matches.length;
-        text = text.replace(re, "[REDACTED]");
-      }
-    }
-  }
-
+  // Structural patterns (URL/email/phone) run before the loose name-substring
+  // match below, so a name embedded in an email/handle (e.g. "devika.nair@...")
+  // gets redacted as one clean token instead of being chopped up first.
   const linkedinGithub = text.match(URL_RE);
   if (linkedinGithub) {
     report.urls_removed += linkedinGithub.length;
@@ -157,6 +149,17 @@ export function redactPii(
   if (phones.length > 0) {
     report.phones_removed += phones.length;
     text = text.replace(PHONE_RE, (m) => (isPlausiblePhone(m) ? "[REDACTED]" : m));
+  }
+
+  if (pii.fullName) {
+    for (const variant of nameVariants(pii.fullName)) {
+      const re = new RegExp(escapeRegex(variant), "gi");
+      const matches = text.match(re);
+      if (matches) {
+        report.name_removed += matches.length;
+        text = text.replace(re, "[REDACTED]");
+      }
+    }
   }
 
   return { cvContent: text, report };
