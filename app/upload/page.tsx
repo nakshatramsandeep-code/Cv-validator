@@ -19,11 +19,11 @@ const CONCURRENCY = 3;
 
 function PhaseBadge({ phase }: { phase: Phase }) {
   const styles: Record<Phase, string> = {
-    queued: "bg-gray-100 text-gray-600",
-    parsing: "bg-blue-100 text-blue-700",
-    scoring: "bg-amber-100 text-amber-700",
-    done: "bg-green-100 text-green-800",
-    error: "bg-red-100 text-red-800",
+    queued: "bg-gray-100 text-gray-500",
+    parsing: "bg-primary-soft text-primary",
+    scoring: "bg-amber-50 text-amber-600",
+    done: "bg-accent-soft text-accent-dark",
+    error: "bg-red-50 text-red-600",
   };
   return <span className={`pill ${styles[phase]}`}>{phase}</span>;
 }
@@ -223,7 +223,7 @@ export default function UploadPage() {
         <select
           value={role ?? ""}
           onChange={(e) => setRole(e.target.value === "" ? null : (e.target.value as Role))}
-          className="border border-gray-300 rounded-md px-3 py-1.5 text-sm"
+          className="border border-gray-200 rounded-xl px-3.5 py-2 text-sm"
         >
           <option value="">Not specified — score against both</option>
           <option value="PM">Product Manager</option>
@@ -236,10 +236,10 @@ export default function UploadPage() {
             e.preventDefault();
             if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
           }}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center text-sm text-gray-500"
+          className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center text-sm text-gray-500 bg-canvas/40"
         >
           Drag and drop PDF / DOCX / TXT files here, or
-          <label className="text-blue-600 cursor-pointer ml-1">
+          <label className="text-primary cursor-pointer ml-1 font-medium">
             browse
             <input
               type="file"
@@ -278,7 +278,7 @@ export default function UploadPage() {
         </div>
 
         {csvRows && (
-          <div className="border rounded-md overflow-x-auto text-sm">
+          <div className="border border-gray-100 rounded-xl overflow-x-auto text-sm">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>

@@ -59,7 +59,7 @@ export default function DraftEditor({ candidateId, draft }: { candidateId: strin
         onBlur={save}
         disabled={sent}
         rows={8}
-        className="w-full border border-gray-300 rounded-md p-2 text-sm disabled:bg-gray-50"
+        className="w-full border border-gray-200 rounded-xl p-3 text-sm disabled:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-soft"
       />
       {saving && <span className="text-xs text-gray-400">Saving...</span>}
       {error && <p className="text-xs text-red-600">{error}</p>}

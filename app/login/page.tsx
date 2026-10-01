@@ -29,7 +29,10 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card p-6 w-80 space-y-4">
+    <form onSubmit={onSubmit} className="card p-8 w-80 space-y-4">
+      <div className="h-11 w-11 rounded-xl bg-primary-soft flex items-center justify-center text-primary font-bold mb-2">
+        K
+      </div>
       <h1 className="text-lg font-semibold">Kargo Hiring</h1>
       <input
         type="password"
@@ -37,7 +40,7 @@ function LoginForm() {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
-        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+        className="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-soft"
       />
       {error && <p className="text-sm text-red-600">{error}</p>}
       <button type="submit" disabled={loading} className="btn-primary w-full">
@@ -49,7 +52,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-canvas">
       <Suspense fallback={null}>
         <LoginForm />
       </Suspense>

@@ -51,7 +51,7 @@ export default function CandidateActions({
       </button>
       <div className="flex gap-2">
         {decision !== "advance" && (
-          <button className="btn-primary" disabled={busy !== null || sent} onClick={() => decide("advance")}>
+          <button className="btn-accent" disabled={busy !== null || sent} onClick={() => decide("advance")}>
             {busy === "advance" ? "Advancing..." : "Advance"}
           </button>
         )}

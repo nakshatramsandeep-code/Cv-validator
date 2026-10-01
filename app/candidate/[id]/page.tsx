@@ -2,19 +2,26 @@ import { notFound } from "next/navigation";
 import { getCandidateDetail } from "@/lib/candidate-detail";
 import CandidateActions from "./CandidateActions";
 import DraftEditor from "./DraftEditor";
+import CircularProgress from "../../components/CircularProgress";
 import type { CriterionLayer, Score } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+const TIER_COLOR: Record<string, string> = {
+  INTERVIEW: "#5FAE6F",
+  REVIEW: "#F2B84B",
+  PASS: "#B9BEC9",
+};
+
 function ScoreRow({ score }: { score: Score }) {
   const confidenceStyle =
     score.confidence === "high"
-      ? "text-green-700"
+      ? "text-accent-dark"
       : score.confidence === "medium"
-        ? "text-amber-700"
-        : "text-gray-500";
+        ? "text-amber-600"
+        : "text-gray-400";
   return (
-    <div className="border rounded-md p-3 text-sm">
+    <div className="border border-gray-100 rounded-xl p-3 text-sm">
       <div className="flex justify-between font-medium">
         <span>
           {score.criterion_code} · {score.criterion_name}
@@ -59,22 +66,32 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold">{fullName ?? "(unnamed)"}</h1>
-          <p className="text-sm text-gray-500">
-            Applied: {candidate.applied_role ?? "UNSPECIFIED"}
-            {candidate.status === "error" && (
-              <span className="text-red-600"> · {candidate.error_message}</span>
-            )}
-          </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {scoring && (
+            <CircularProgress
+              value={scoring.best_composite}
+              size={64}
+              stroke={6}
+              color={TIER_COLOR[scoring.final_tier]}
+            />
+          )}
+          <div>
+            <h1 className="text-xl font-semibold">{fullName ?? "(unnamed)"}</h1>
+            <p className="text-sm text-gray-500">
+              Applied: {candidate.applied_role ?? "UNSPECIFIED"}
+              {candidate.status === "error" && (
+                <span className="text-red-600"> · {candidate.error_message}</span>
+              )}
+            </p>
+          </div>
         </div>
         <CandidateActions candidateId={candidate.id} decision={decision} draft={draft} />
       </div>
 
       {scoring?.guardrail_notes && (
         <div
-          className={`card p-3 text-sm ${scoring.potential_flag ? "border-purple-300 bg-purple-50" : "bg-gray-50"}`}
+          className={`card p-3 text-sm ${scoring.potential_flag ? "border border-primary-soft bg-primary-soft" : "bg-gray-50"}`}
         >
           {scoring.guardrail_notes}
         </div>
@@ -88,7 +105,7 @@ export default async function CandidateDetailPage({ params }: { params: Promise<
               <div className="text-lg font-semibold">
                 {scoring.recommended_role}
                 {scoring.reroute_suggested && candidate.applied_role && (
-                  <span className="text-xs text-purple-600 block font-normal">
+                  <span className="text-xs text-primary block font-normal">
                     applied {candidate.applied_role}, better fit {scoring.recommended_role}
                   </span>
                 )}

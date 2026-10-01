@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { DashboardRow } from "@/lib/dashboard";
 
+const TIER_PILL: Record<string, string> = {
+  INTERVIEW: "bg-accent-soft text-accent-dark",
+  REVIEW: "bg-amber-50 text-amber-600",
+  PASS: "bg-gray-100 text-gray-500",
+};
+
 function CandidateRow({
   row,
   actions,
@@ -13,15 +19,15 @@ function CandidateRow({
 }) {
   const s = row.scoring!;
   return (
-    <div className="flex items-center gap-2 py-2 border-b last:border-0 text-sm">
+    <div className="flex items-center gap-2 py-2.5 border-b border-gray-50 last:border-0 text-sm">
       <Link href={`/candidate/${row.candidate.id}`} className="font-medium hover:underline flex-1 truncate">
         {row.first_name ?? "(unnamed)"}
       </Link>
-      <span className="pill bg-gray-100 text-gray-600">{s.final_tier}</span>
+      <span className={`pill ${TIER_PILL[s.final_tier] ?? "bg-gray-100 text-gray-500"}`}>{s.final_tier}</span>
       <span className="text-xs text-gray-400">{s.recommended_role}</span>
-      <span className="text-xs font-medium w-10 text-right">{s.best_composite.toFixed(1)}</span>
+      <span className="text-xs font-medium w-10 text-right text-gray-700">{s.best_composite.toFixed(1)}</span>
       {actions.map((a) => (
-        <button key={a.label} className="btn-secondary text-xs" disabled={a.busy} onClick={a.onClick}>
+        <button key={a.label} className="btn-secondary text-xs py-1.5 px-3" disabled={a.busy} onClick={a.onClick}>
           {a.busy ? "..." : a.label}
         </button>
       ))}
@@ -77,7 +83,8 @@ export default function PipelinePage() {
       {!loading && (
         <div className="grid md:grid-cols-3 gap-4">
           <div className="card p-4">
-            <h2 className="font-semibold text-sm">
+            <h2 className="font-semibold text-sm flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
               Needs review <span className="text-gray-400 font-normal">{needsReview.length}</span>
             </h2>
             <p className="text-xs text-gray-400 mb-2">Scored, waiting on a shortlist call</p>
@@ -95,7 +102,8 @@ export default function PipelinePage() {
           </div>
 
           <div className="card p-4">
-            <h2 className="font-semibold text-sm">
+            <h2 className="font-semibold text-sm flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" />
               Advancing <span className="text-gray-400 font-normal">{advancing.length}</span>
             </h2>
             <p className="text-xs text-gray-400 mb-2">Interview invite sent (or sending)</p>
@@ -113,7 +121,8 @@ export default function PipelinePage() {
           </div>
 
           <div className="card p-4">
-            <h2 className="font-semibold text-sm">
+            <h2 className="font-semibold text-sm flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
               Declined <span className="text-gray-400 font-normal">{declined.length}</span>
             </h2>
             <p className="text-xs text-gray-400 mb-2">Rejection sent (or sending)</p>
